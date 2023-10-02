@@ -1,0 +1,47 @@
+#Number of replic
+replicaCount: 1
+
+#Image
+image:
+  repository: ping-repo
+  tag: latest
+  pullPolicy: IfNotPresent
+
+#Service
+service:
+  type: ClusterIP
+  port: 80
+
+#“requiredDuringSchedulingIgnoredDuringExecution” option of “podAntiAffinity” has been used to ensure that these rules have to be met in the scheduling but do not affect the execution. In this section we simply check that there is no pod whose “app” key matches “ping” on the same node using “topologyKey: kubernetes.io/hostname”.
+affinity:
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+            - key: app
+          operator: In
+            values:
+              - ping
+        topologyKey: kubernetes.io/hostname
+    #We will use “podAffinityTerm” to achieve this configuration, with the “labelSelector” we apply this configuration only to those objects that contain the “app” key with the value “ping” and then we apply “topologyKey: topology. kubernetes.io/zone”.
+    preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 100
+        podAffinityTerm:
+          labelSelector:
+            matchExpressions:
+      - key: app
+          operator: In
+          values:
+            -  ping
+          topologyKey: topology.kubernetes.io/zone
+
+#Tolerations, previously we should have marked with “taint” the nodes whose group we do not want to use in the deployment... I have called it and created a taint “group” whose value is “back ”.
+tolerations:
+  - key: "grupo"
+    operator: "Equal"
+    value: "back"
+    effect: "NoSchedule"
+
+#nodeSelector
+nodeSelector:
+  team: not-dev
