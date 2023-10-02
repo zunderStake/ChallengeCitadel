@@ -29,10 +29,10 @@ affinity:
         podAffinityTerm:
           labelSelector:
             matchExpressions:
-      - key: app
-          operator: In
-          values:
-            -  ping
+              - key: app
+                operator: In
+                values:
+                  -  ping
           topologyKey: topology.kubernetes.io/zone
 
 #Tolerations, previously we should have marked with “taint” the nodes whose group we do not want to use in the deployment... I have called it and created a taint “group” whose value is “back ”.
