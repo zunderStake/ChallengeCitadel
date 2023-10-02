@@ -116,37 +116,57 @@ For this we must take into account certain aspects such as that in our repositor
 
 ```
 name: Deploy Helm Chart to AKS
+
 on:
   push:
-	branches:
-  	- main
+    branches:
+      - main
+
 jobs:
   deploy:
-	runs-on: ubuntu-latest
-	steps:
-	#Download code repository
-	- name: Checkout repository
-  	uses: actions/checkout@v2
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+      #Configuration Helm
+      - name: Setup Helm
+        uses: azure/setup-helm@v1
 
-	#Login with Azure credentials
-	- name: Login to Azure
-  	uses: azure/login@v1
-  	with:
-    	creds: ${{ secrets.AZURE_CREDENTIALS }}
+      #Verification chart of Helm
+      - name: Lint Helm Chart
+        run: helm lint ./helm-charts/ping/
 
-	#configure the github agent to use Terraform
-	- name: Setup Terraform
-  	uses: hashicorp/setup-terraform@v1
+      #package Chart
+      - name: Package Helm Chart
+        run: helm package ./helm-charts/ping/ -d ./helm-charts/
 
-	#Start Terraform (download all necessary modules)
-	- name: Initialize Terraform
-  	run: terraform init
+      #Login to Azure
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-	#We launch terraform for import
-	- name: Apply Terraform
-  	run: terraform apply -auto-approve
-	
-	#Logout de Azure
-	- name: Logout from Azure
-  	run: az logout
+      #Upload chart Helm to ACR
+      - name: Push Helm Chart to ACR
+        run: |
+          export HELM_EXPERIMENTAL_OCI=1
+          helm chart save ./helm-charts/ping/ reference.azurecr.io/mychart:v1.0.0
+          helm chart push reference.azurecr.io/mychart:v1.0.0
+
+      #Configuration of Terraform
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+
+      #Init of Terraform
+      - name: Initialize Terraform
+        run: terraform init
+
+      #Apply of Terraform
+      - name: Apply Terraform
+        run: terraform apply -auto-approve
+
+      #logout Azure
+      - name: Logout from Azure
+        run: az logout
+
 ```
